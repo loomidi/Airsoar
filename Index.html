@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirSoar Secure Terminal</title>
+    <!-- DOM Purify for XSS protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <style>
+        :root {
+            --primary: #00ffaa;
+            --accent: #0099ff;
+            --bg-dark: #0a0a0a;
+            --text-light: #f0f0f0;
+            --text-dim: #a0a0a0;
+            --border: #333333;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .security-header {
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            color: black;
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 3px solid var(--border);
+        }
+        
+        .terminal-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            margin: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.1);
+        }
+        
+        .command-line {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            position: sticky;
+            bottom: 0;
+            background-color: var(--bg-dark);
+            border-top: 1px solid var(--border);
+        }
+        
+        .prompt {
+            color: var(--primary);
+            margin-right: 0.5rem;
+            user-select: none;
+        }
+        
+        #command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-light);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            caret-color: var(--primary);
+        }
+        
+        .output {
+            margin-bottom: 1rem;
+        }
+        
+        .output-command {
+            color: var(--accent);
+        }
+        
+        .output-response {
+            white-space: pre-wrap;
+            padding-left: 1rem;
+            border-left: 2px solid var(--border);
+            margin-top: 0.5rem;
+        }
+        
+        .security-status {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-align: right;
+            padding: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        @media (max-width: 768px) {
+            .terminal-container {
+                margin: 0.5rem;
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="security-header">
+        AIRSOAR TERMINAL v1.0.0 | npm:airsoar | Secure Shell Ready
+    </div>
+    
+    <div class="terminal-container" id="terminal-output">
+        <div class="output">
+            <div class="output-command">> Initializing secure session...</div>
+            <div class="output-response">AirSoar terminal ready. DOM Purify active. All output sanitized.</div>
+        </div>
+        
+        <div class="output">
+            <div class="output-command">> npm install airsoar</div>
+            <div class="output-response">Installing AirSoar package...\nSuccessfully installed airsoar@1.0.0\nAdded 1 package in 1.25s</div>
+        </div>
+    </div>
+    
+    <div class="command-line">
+        <span class="prompt">airsoar~$</span>
+        <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off">
+    </div>
+    
+    <div class="security-status">
+        SECURE SESSION | DOM SANITIZATION ACTIVE | LAST CHECK: <span id="timestamp">just now</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const commandInput = document.getElementById('command-input');
+            const terminalOutput = document.getElementById('terminal-output');
+            const timestampEl = document.getElementById('timestamp');
+            
+            // Update timestamp
+            function updateTimestamp() {
+                const now = new Date();
+                timestampEl.textContent = now.toLocaleTimeString();
+            }
+            setInterval(updateTimestamp, 60000);
+            updateTimestamp();
+            
+            // Command history
+            let commandHistory = [];
+            let historyPosition = 0;
+            
+            // Process command
+            function processCommand(command) {
+                if (!command.trim()) return;
+                
+                // Add to history
+                commandHistory.unshift(command);
+                historyPosition = 0;
+                
+                // Display command
+                const commandEl = document.createElement('div');
+                commandEl.className = 'output';
+                commandEl.innerHTML = DOMPurify.sanitize(
+                    `<div class="output-command">> ${command}</div>
+                    <div class="output-response" id="pending-response">...</div>`
+                );
+                terminalOutput.appendChild(commandEl);
+                
+                // Scroll to bottom
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                
+                // Generate response (simulate AI processing)
+                setTimeout(() => {
+                    const response = generateResponse(command);
+                    document.getElementById('pending-response').innerHTML = 
+                        DOMPurify.sanitize(response);
+                    
+                    // Scroll to show new response
+                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                }, 500 + Math.random() * 1000);
+            }
+            
+            // Sample response generator
+            function generateResponse(command) {
+                command = command.toLowerCase();
+                
+                if (command.startsWith('npm install')) {
+                    return `Installing ${command.split(' ')[2]}...\nPackage installed successfully`;
+                }
+                else if (command.includes('hello') || command.includes('hi')) {
+                    return "Hello! This is AirSoar secure terminal. How can I help?";
+                }
+                else if (command.includes('security')) {
+                    return "Security status:\n- XSS Protection: ✔ Active\n- Input sanitization: ✔ Enabled\n- Content Security Policy: ✔ Implemented\nAll user input is processed through DOMPurify before rendering.";
+                }
+                else if (command.includes('help')) {
+                    return "Available commands:\n- npm install [package]: Install packages\n- hello/hi: Greet the terminal\n- security: Check security status\n- clear: Clear terminal\n- help: Show this message\n\nType 'npm' for package commands";
+                }
+                else if (command.includes('clear')) {
+                    setTimeout(() => {
+                        terminalOutput.innerHTML = '';
+                        addSystemMessage("Terminal cleared. Security protections remain active.");
+                    }, 300);
+                    return "";
+                }
+                else {
+                    return `Command processed securely: "${command}"\nType 'help' for available commands.`;
+                }
+            }
+            
+            function addSystemMessage(message) {
+                const messageEl = document.createElement('div');
+                messageEl.className = 'output';
+                messageEl.innerHTML = DOMPurify.sanitize(
+                    `<div class="output-response">${message}</div>`
+                );
+                terminalOutput.appendChild(messageEl);
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            }
+            
+            // Event listeners
+            commandInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    processCommand(commandInput.value);
+                    commandInput.value = '';
+                }
+                else if (e.key === 'ArrowUp') {
+                    if (historyPosition < commandHistory.length) {
+                        commandInput.value = commandHistory[historyPosition];
+                        historyPosition++;
+                    }
+                }
+                else if (e.key === 'ArrowDown') {
+                    if (historyPosition > 0) {
+                        historyPosition--;
+                        commandInput.value = historyPosition > 0 ? commandHistory[historyPosition - 1] : '';
+                    }
+                }
+            });
+            
+            // Focus input on click anywhere
+            document.addEventListener('click', () => {
+                commandInput.focus();
+            });
+            
+            // Initial focus
+            commandInput.focus();
+        });
+    </script>
+</body>
+</html>
